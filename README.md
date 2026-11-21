@@ -15,6 +15,7 @@ npm test           # unit tests (Vitest)
 npm run typecheck  # TypeScript, no output
 npm run check      # all three
 npm run watch      # rebuild dist/ on every change
+npm run build:release  # same as build, without the developer helpers
 ```
 
 `dist/` is the folder you load into the browser. It's self-contained, so you can copy it to
@@ -45,19 +46,54 @@ Settings: on the extensions page click **Details → Extension options**.
 If you copied `dist/` to another machine, copy it again to the **same folder** and press
 reload — loading from a new folder creates a separate extension with its own settings.
 
+Incognito: the extension doesn't see Incognito windows unless you turn on **Details → Allow in
+Incognito**. (Phase 7 turns Incognito off by policy instead.)
+
 Debugging: on the Night Blocker card, **Inspect views: service worker** opens DevTools for the
 background worker; errors also show up under the card's **Errors** button.
+
+## Trying it out before the settings page exists
+
+Development builds (`npm run build` / `watch`) add helpers to the background worker's console.
+On the extension card click **Inspect views: service worker**, open the **Console**, and type:
+
+```js
+nb.hardSoon("example.com", 0, 10)   // hard block on example.com, starting now, for 10 min
+nb.softNow("example.org", 2, 1, 5)  // soft block: 2 opens × 1 min, 5 s unlock delay, for 2 h
+nb.reminderNow("wikipedia.org", 1)  // "N minutes so far" every minute, for 2 h
+nb.state()                          // everything stored
+nb.remove("<set id>")               // delete one set right away
+nb.reset()                          // delete everything
+```
+
+Things to check:
+1. **Hard block:** with `hardSoon("example.com", 0, 10)`, opening https://example.com/anything shows
+   the block page; already-open example.com tabs switch to it too. `hardSoon("example.com", 1, 2)`
+   — the tab switches by itself a minute later, and goes back to the page when the window ends.
+2. **Soft block:** with `softNow()`, example.org shows the block page with "2/2 opens left" and a
+   countdown; Continue goes back to the page. After 1 minute on the page it's blocked again;
+   after both opens, "all 2 opens used".
+3. **Not counting:** during an open, switch to another app or tab for over 15 s — coming back
+   needs a new open. Time on the block page and while the laptop sleeps doesn't count
+   (`nb.state()` → `usage` → `timeUsed`, in ms).
+4. **Reminders / warnings:** with `reminderNow()`, after a minute on wikipedia.org the page's own
+   console (not the worker's) logs "wikipedia.org · 1 minute so far". (The banner itself comes in Phase 4.)
+5. **Restarts:** quit and reopen the browser, or click the card's reload ↻ — sets and usage stay.
+
+Release builds (`npm run build:release`) leave the helpers out.
 
 ## Layout
 
 ```
 static/      manifest.json, HTML and CSS — copied to dist/ as-is
 src/
-  background/  service worker (navigation interception, timing, alarms)
+  background/  service worker: controller.ts (tabs, timing, saving — unit-tested with a fake
+               browser), chromeApi.ts (the real chrome.* calls), index.ts (event wiring)
   options/     settings page
   block/       block page shown instead of a blocked site
   content/     content script (on-page warning banner)
   core/        pure logic with unit tests — no chrome.* APIs
+  shared/      message types and block page URLs shared by the worker and pages
 tests/       Vitest tests
 build.mjs    esbuild bundling + static copy
 ```

@@ -8,9 +8,19 @@
   </head>
   <body>
     <main>
+      <p id="set-name" class="set-name"></p>
       <h1 id="site">This site</h1>
-      <p>is blocked right now.</p>
-      <button id="new-tab" type="button">Go to a new tab</button>
+      <p id="headline"></p>
+      <p id="message" class="message"></p>
+      <ul id="reasons" class="reasons"></ul>
+      <p id="streak" class="muted"></p>
+      <section id="soft" hidden>
+        <p id="soft-status"></p>
+        <p id="soft-limits" class="muted"></p>
+        <button id="continue" type="button" disabled>Continue</button>
+      </section>
+      <p id="error" class="error"></p>
+      <button id="new-tab" type="button" class="secondary">Go to a new tab</button>
     </main>
     <script src="block.js"></script>
   </body>

@@ -1,9 +1,10 @@
-// Content script (Phase 4 draws the warning / reminder banner in a shadow root).
-// For now it only listens, so the background worker can already target it.
+// Content script. Phase 4 draws the warning / reminder banner in a shadow root; for now it logs.
 
-chrome.runtime.onMessage.addListener((message: unknown) => {
-  if (typeof message === "object" && message !== null && (message as { type?: unknown }).type === "banner") {
-    console.debug("[Night Blocker] banner requested", message);
+import type { ContentMessage } from "../shared/messages";
+
+chrome.runtime.onMessage.addListener((message: ContentMessage) => {
+  if (message.type === "banner") {
+    console.info(`[Night Blocker] ${message.text} (${message.setName})`);
   }
   return false;
 });

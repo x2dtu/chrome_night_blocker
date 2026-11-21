@@ -1,10 +1,12 @@
 // Bundles the extension into a single dist/ folder that can be loaded with "Load unpacked".
 //   node build.mjs          one-off build
 //   node build.mjs --watch  rebuild on every change
+//   node build.mjs --release  without dev helpers (for publishing)
 import * as esbuild from "esbuild";
 import { cpSync, rmSync, watch } from "node:fs";
 
 const isWatch = process.argv.includes("--watch");
+const isRelease = process.argv.includes("--release");
 const outdir = "dist";
 
 /** @type {esbuild.BuildOptions} */
@@ -22,6 +24,8 @@ const options = {
   target: "chrome116",
   sourcemap: true,
   logLevel: "info",
+  // Dev-only helpers (src/background/devTools.ts) are dropped from release builds.
+  define: { __DEV__: String(!isRelease) },
 };
 
 function copyStatic() {

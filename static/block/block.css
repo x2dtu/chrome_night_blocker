@@ -1,12 +1,20 @@
 :root { color-scheme: dark; }
 body {
+  --set-color: #5c6bc0;
   margin: 0; min-height: 100vh; display: grid; place-items: center;
   font: 16px/1.5 system-ui, sans-serif; color: #e8e9f3;
-  background: radial-gradient(circle at 50% 0%, #2a2f5a 0%, #0f1222 60%);
+  background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--set-color) 45%, #0f1222) 0%, #0f1222 60%);
 }
-main { text-align: center; padding: 24px; }
+main { text-align: center; padding: 24px; max-width: 560px; }
 h1 { margin: 0 0 4px; font-size: 28px; }
+.set-name { color: var(--set-color); font-weight: 600; margin: 0 0 8px; }
+.message { font-style: italic; }
+.reasons { list-style: none; padding: 0; color: #c5c8dc; }
+.muted { color: #9aa0b8; }
+.error { color: #ff8a80; }
 button {
-  margin-top: 24px; padding: 10px 20px; border: 0; border-radius: 999px;
+  margin-top: 16px; padding: 10px 20px; border: 0; border-radius: 999px;
   background: #e8e9f3; color: #0f1222; font: inherit; font-weight: 600; cursor: pointer;
 }
+button:disabled { opacity: 0.5; cursor: default; }
+button.secondary { background: transparent; color: #e8e9f3; border: 1px solid #4a4f6e; }

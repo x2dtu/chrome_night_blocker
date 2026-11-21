@@ -1,4 +1,26 @@
-:root { color-scheme: dark; }
-body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #0f1222; color: #e8e9f3; }
-main { max-width: 720px; margin: 48px auto; padding: 0 24px; }
-.muted { color: #9aa0b8; }
+.app { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 14px; }
+.screen { display: flex; flex-direction: column; gap: 14px; }
+.screen-header { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 0 6px; }
+.screen-header h1 { font-size: 30px; font-weight: 500; }
+.screen-header .subtitle { color: var(--muted); }
+.back { margin-left: -12px; }
+
+.set-card { gap: 10px; cursor: pointer; color: inherit; }
+.set-card:hover { background: var(--container-high); }
+.set-name { font-size: 20px; font-weight: 500; }
+
+.hero { background: color-mix(in srgb, var(--accent) 18%, var(--container)); }
+.hero-text { font-size: 22px; }
+
+.colors { display: flex; flex-wrap: wrap; gap: 10px; }
+.swatch { width: 34px; height: 34px; border-radius: 50%; }
+.swatch.selected { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--text); }
+
+.adder { display: flex; align-items: flex-start; gap: 8px; }
+.adder button { margin-top: 22px; }
+
+.usage { display: flex; flex-direction: column; gap: 4px; }
+.usage .open { margin-left: 42px; font-size: 13px; color: var(--muted); }
+.usage .open.current { color: var(--accent); font-weight: 500; }
+.limit-row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.limit-row span:last-child { color: var(--muted); text-align: right; }

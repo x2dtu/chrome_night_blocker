@@ -1,0 +1,182 @@
+/* Night Blocker settings theme — same palettes as the Android app. Follows the system setting. */
+:root {
+  color-scheme: dark;
+  --bg: #0e1120;
+  --surface: #151929;
+  --container: #1c2136;
+  --container-high: #242a44;
+  --container-highest: #2b3250;
+  --outline: #3a4163;
+  --text: #e7e9f4;
+  --muted: #a4aac6;
+  --primary: #9aaaff;
+  --on-primary: #0e1120;
+  --secondary: #7fd6cb;
+  --tertiary: #ffc07a;
+  --tertiary-container: #3d3020;
+  --on-tertiary-container: #ffe2c2;
+  --error: #ff8a93;
+  --error-container: #452128;
+  --on-error-container: #ffd9dc;
+  --state-active: var(--secondary);
+  --state-paused: var(--tertiary);
+  --state-upcoming: var(--primary);
+  --state-disabled: var(--muted);
+  --accent: var(--primary);
+  --radius-l: 20px;
+  --radius-m: 12px;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f5f6fb;
+    --surface: #ffffff;
+    --container: #eceef8;
+    --container-high: #e2e5f4;
+    --container-highest: #d8dcee;
+    --outline: #b9bfd8;
+    --text: #1a1c2a;
+    --muted: #5a6080;
+    --primary: #4053d6;
+    --on-primary: #ffffff;
+    --secondary: #00796b;
+    --tertiary: #9a5b00;
+    --tertiary-container: #ffe8cc;
+    --on-tertiary-container: #3a2400;
+    --error: #b3261e;
+    --error-container: #ffdad6;
+    --on-error-container: #410002;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+h1, h2, h3, p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+button:disabled { cursor: default; opacity: 0.5; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+input { font: inherit; color: var(--text); }
+
+.grow { flex: 1; min-width: 0; }
+.row { display: flex; align-items: center; gap: 10px; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hint { color: var(--muted); font-size: 13px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.error { color: var(--error); font-size: 14px; margin-top: 8px; }
+.streak { color: var(--accent); font-weight: 600; font-size: 14px; }
+.pending { color: var(--tertiary); font-size: 13px; }
+
+/* Cards */
+.card {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 18px; border-radius: var(--radius-l);
+  background: var(--container); text-align: left; width: 100%;
+}
+.card-head { display: flex; align-items: flex-start; gap: 8px; }
+.card h2 { font-size: 16px; font-weight: 600; }
+.card.notice { background: var(--tertiary-container); color: var(--on-tertiary-container); }
+.card.errors { background: var(--error-container); color: var(--on-error-container); }
+
+/* Buttons */
+.primary, .tonal, .outline, .tertiary {
+  min-height: 44px; padding: 10px 20px; border-radius: 999px; font-weight: 600;
+}
+.primary { background: var(--primary); color: var(--on-primary); }
+.tonal { background: color-mix(in srgb, var(--primary) 20%, transparent); }
+.outline { border: 1px solid var(--outline); }
+.outline.danger { color: var(--error); }
+.tertiary { background: var(--tertiary); color: var(--on-primary); }
+.wide { width: 100%; }
+.text { padding: 8px 12px; border-radius: 999px; color: var(--primary); font-weight: 500; }
+.text:hover:not(:disabled), .outline:hover:not(:disabled) { background: color-mix(in srgb, var(--primary) 10%, transparent); }
+.text.strong { font-weight: 700; }
+.info {
+  flex: none; width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid var(--outline); color: var(--muted); font-size: 13px; font-weight: 700; font-style: italic;
+}
+
+/* Pills, dots, icons */
+.pill {
+  display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  color: var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); white-space: nowrap;
+}
+.color-dot { display: inline-block; flex: none; border-radius: 50%; }
+.site-icon {
+  flex: none; display: inline-grid; place-items: center; border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+.site-icon.badge { font-weight: 700; background: color-mix(in srgb, var(--accent) 30%, transparent); }
+
+/* Fields */
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field > span:first-child { font-size: 13px; color: var(--muted); }
+.field input, .number input {
+  padding: 10px 12px; border-radius: var(--radius-m);
+  border: 1px solid var(--outline); background: var(--surface);
+}
+.field input:focus, .number input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.setting { display: flex; align-items: center; gap: 10px; }
+.setting-label { font-size: 15px; }
+.number { display: flex; align-items: center; gap: 6px; }
+.number input { width: 72px; text-align: right; }
+.number span { min-width: 44px; color: var(--muted); font-size: 13px; }
+
+/* Switch */
+.switch {
+  flex: none; position: relative; width: 48px; height: 28px; border-radius: 999px;
+  background: var(--container-highest); border: 2px solid var(--outline); transition: background 0.15s;
+}
+.switch span { position: absolute; top: 4px; left: 4px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: all 0.15s; }
+.switch.on { background: var(--primary); border-color: var(--primary); }
+.switch.on span { left: 22px; top: 2px; width: 20px; height: 20px; background: var(--on-primary); }
+
+/* Choice cards and chips */
+.choice {
+  display: flex; flex-direction: column; gap: 2px; text-align: left;
+  padding: 12px 14px; border-radius: var(--radius-m); border: 1px solid var(--outline);
+}
+.choice-title { font-weight: 600; }
+.choice.selected { border: 2px solid var(--primary); padding: 11px 13px; background: color-mix(in srgb, var(--primary) 12%, transparent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--outline); font-size: 14px; }
+.chip.selected { background: color-mix(in srgb, var(--primary) 24%, transparent); border-color: var(--primary); }
+.chip.assist { border-style: dashed; }
+
+/* Dialog */
+.dialog {
+  border: 0; padding: 0; border-radius: 24px; background: var(--container-high); color: var(--text);
+  width: min(420px, calc(100vw - 32px));
+}
+.dialog::backdrop { background: rgb(0 0 0 / 50%); }
+.dialog-body { display: flex; flex-direction: column; gap: 12px; padding: 24px; }
+.dialog-body h2 { font-size: 20px; font-weight: 500; }
+.dialog-body h3 { font-size: 14px; font-weight: 600; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 8px; }
+
+/* Schedule */
+.week-bars { display: flex; flex-direction: column; gap: 7px; }
+.week-row { display: flex; align-items: center; }
+.week-row .day { width: 38px; font-size: 12px; color: var(--muted); }
+.track {
+  position: relative; flex: 1; height: 14px; border-radius: 7px; overflow: hidden;
+  background:
+    linear-gradient(var(--outline), var(--outline)) 25% 50% / 1px 50% no-repeat,
+    linear-gradient(var(--outline), var(--outline)) 50% 50% / 1px 50% no-repeat,
+    linear-gradient(var(--outline), var(--outline)) 75% 50% / 1px 50% no-repeat,
+    var(--container-highest);
+}
+.track .fill { position: absolute; top: 0; bottom: 0; border-radius: 7px; background: var(--c); }
+.week-scale { display: flex; justify-content: space-between; padding-left: 38px; font-size: 11px; color: var(--muted); }
+.window-row { display: flex; align-items: center; gap: 4px; padding-right: 4px; border-radius: var(--radius-m); background: var(--container-high); }
+.window-main { flex: 1; display: flex; align-items: center; gap: 12px; padding: 10px 14px; text-align: left; border-radius: var(--radius-m); }
+.window-main .grow { display: flex; flex-direction: column; }
+.row-title { font-size: 15px; }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 10;
+  max-width: min(560px, calc(100vw - 32px)); padding: 14px 20px; border-radius: 12px;
+  background: var(--text); color: var(--bg); box-shadow: 0 6px 20px rgb(0 0 0 / 30%); cursor: pointer;
+}

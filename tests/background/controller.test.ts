@@ -330,3 +330,66 @@ describe("Controller", () => {
     expect(b.tickAt).toBe(at("2026-11-16T10:01:00Z") + 50);
   });
 });
+
+describe("Controller actions (settings UI)", () => {
+  let b: FakeBrowser;
+  let c: Controller;
+  const monday = at("2026-11-16T10:00:00Z");
+  beforeEach(() => {
+    b = new FakeBrowser(monday);
+    c = new Controller(b);
+  });
+  const base = () => blockSet({ id: "s", name: "Bedtime", mode: "hard", targets: [website("reddit.com")], windows: allWeek });
+  const current = async () => (await c.getState()).sets[0]!;
+
+  it("creates a set with a hashed PIN, then requires it", async () => {
+    expect(await c.action({ type: "createSet", set: base(), pin: "1234" })).toEqual({ ok: true });
+    const set = await current();
+    expect(set.pinHash).toMatch(/^pbkdf2-sha256\$/);
+    expect(await c.action({ type: "verifyPin", setId: "s", pin: "0000" })).toEqual({ ok: false, error: "Wrong PIN" });
+    expect(await c.action({ type: "verifyPin", setId: "s", pin: "1234" })).toEqual({ ok: true });
+    expect((await c.action({ type: "setEnabled", setId: "s", enabled: false })).ok).toBe(false);
+  });
+
+  it("rejects a bad new PIN", async () => {
+    expect(await c.action({ type: "createSet", set: base(), pin: "12" })).toEqual({ ok: false, error: "PIN must be 4–12 digits" });
+    expect((await c.getState()).sets).toEqual([]);
+  });
+
+  it("edits: tightening now, loosening waits; the PIN can't be changed by an edit", async () => {
+    await c.action({ type: "createSet", set: base(), pin: "1234" });
+    const pinHash = (await current()).pinHash;
+    const tighter = await c.action({ type: "editSet", set: { ...base(), targets: [website("reddit.com"), website("x.com")], pinHash: null }, pin: "1234" });
+    expect(tighter.ok && tighter.outcome?.type).toBe("applyNow");
+    expect((await current()).targets).toHaveLength(2);
+    expect((await current()).pinHash).toBe(pinHash);
+    const looser = await c.action({ type: "editSet", set: { ...base(), targets: [] }, pin: "1234" });
+    expect(looser.ok && looser.outcome?.type).toBe("pending");
+    expect((await current()).targets).toHaveLength(2);
+    await c.action({ type: "cancelPending", setId: "s" });
+    expect((await c.getState()).pendingChanges).toEqual({});
+  });
+
+  it("turning off waits; delete needs it off; new blocks apply to open tabs right away", async () => {
+    b.open(1, "https://www.reddit.com/");
+    await c.action({ type: "createSet", set: base(), pin: null });
+    expect(b.urlOf(1)).toBe(`${BASE}#https://www.reddit.com/`);
+    const off = await c.action({ type: "setEnabled", setId: "s", enabled: false });
+    expect(off.ok && off.outcome?.type).toBe("pending");
+    expect(await c.action({ type: "deleteSet", setId: "s" })).toEqual({ ok: false, error: "Turn the block set off before deleting it" });
+    b.time += min(5);
+    await c.refresh();
+    expect((await current()).enabled).toBe(false);
+    expect(b.urlOf(1)).toBe("https://www.reddit.com/");
+    expect(await c.action({ type: "deleteSet", setId: "s" })).toEqual({ ok: true });
+    expect((await c.getState()).sets).toEqual([]);
+  });
+
+  it("pause", async () => {
+    await c.action({ type: "createSet", set: base(), pin: null });
+    const r = await c.action({ type: "suspend", setId: "s" });
+    expect(r.ok && r.suspension).toEqual({ type: "allowed", remainingAfter: 2 });
+    expect((await current()).suspendedUntil).toBe(monday + min(1));
+    expect((await c.action({ type: "suspend", setId: "s" })).ok).toBe(false);
+  });
+});

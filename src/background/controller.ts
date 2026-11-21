@@ -3,10 +3,11 @@ import type { Decision } from "../core/decision";
 import { BlockEngine } from "../core/engine";
 import { hostFromUrl } from "../core/hosts";
 import type { BlockSet } from "../core/model";
-import { addSet, maintain, nextPendingAt } from "../core/stateActions";
+import { hashPin, isValidPin, verifyPin } from "../core/pin";
+import { addSet, cancelPending, deleteSet, maintain, nextPendingAt, requestEdit, setById, suspend } from "../core/stateActions";
 import type { Instant, Zone } from "../core/time";
 import { blockPageUrl, originalFromBlockUrl } from "../shared/blockUrl";
-import type { BlockPageModel, ContinueResult } from "../shared/messages";
+import type { ActionRequest, ActionResult, BlockPageModel, ContinueResult } from "../shared/messages";
 import type { BrowserApi, TabInfo } from "./api";
 import { bannerFor, blockPageModel } from "./presentation";
 
@@ -96,6 +97,66 @@ export class Controller {
       await this.update();
       return this.state;
     });
+  }
+
+  /** A change from the settings UI. Checks the PIN, then applies it. */
+  action(request: ActionRequest): Promise<ActionResult> {
+    return this.run(async () => {
+      const now = this.api.now();
+      try {
+        const result = await this.applyAction(request, now);
+        if (result.ok) {
+          this.engine.updateSets(this.state.sets, now);
+          await this.update();
+        }
+        return result;
+      } catch (e) {
+        return { ok: false, error: e instanceof Error ? e.message : String(e) };
+      }
+    });
+  }
+
+  private async applyAction(r: ActionRequest, now: Instant): Promise<ActionResult> {
+    if (r.type === "createSet") {
+      if (r.pin !== null && !isValidPin(r.pin)) return { ok: false, error: "PIN must be 4–12 digits" };
+      const pinHash = r.pin === null ? null : await hashPin(r.pin);
+      this.state = addSet(this.state, { ...r.set, pinHash, suspendedUntil: null });
+      return { ok: true };
+    }
+    if (r.type === "cancelPending") {
+      this.state = cancelPending(this.state, r.setId); // keeps things as strict as they are: no PIN
+      return { ok: true };
+    }
+    const setId = r.type === "editSet" ? r.set.id : r.setId;
+    const current = setById(this.state, setId);
+    if (!current) return { ok: false, error: "That block set no longer exists" };
+    if (current.pinHash !== null && !(await verifyPin(r.pin ?? "", current.pinHash))) {
+      return { ok: false, error: "Wrong PIN" };
+    }
+    switch (r.type) {
+      case "verifyPin":
+        return { ok: true };
+      case "editSet": {
+        const proposed = { ...r.set, pinHash: current.pinHash, suspendedUntil: current.suspendedUntil };
+        const [state, outcome] = requestEdit(this.state, proposed, now, this.zone);
+        this.state = state;
+        return { ok: true, outcome };
+      }
+      case "setEnabled": {
+        const [state, outcome] = requestEdit(this.state, { ...current, enabled: r.enabled }, now, this.zone);
+        this.state = state;
+        return { ok: true, outcome };
+      }
+      case "suspend": {
+        const [state, check] = suspend(this.state, setId, now, this.zone);
+        this.state = state;
+        return check.type === "allowed" ? { ok: true, suspension: check } : { ok: false, error: `Can't pause right now (${check.type})` };
+      }
+      case "deleteSet":
+        if (current.enabled) return { ok: false, error: "Turn the block set off before deleting it" };
+        this.state = deleteSet(this.state, setId);
+        return { ok: true };
+    }
   }
 
   addSet(set: BlockSet): Promise<AppState> {

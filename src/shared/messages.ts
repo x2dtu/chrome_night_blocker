@@ -1,3 +1,6 @@
+import type { ChangeOutcome } from "../core/changeReview";
+import type { BlockSet } from "../core/model";
+import type { SuspensionCheck } from "../core/suspension";
 import type { Millis } from "../core/time";
 
 /** Requests from extension pages (block page, options, popup) to the background worker. */
@@ -6,7 +9,28 @@ export type Request =
   /** What the block page for [url] (the blocked URL) should show. */
   | { readonly type: "getBlockPage"; readonly url: string }
   /** Continue pressed on the block page in the sender's tab. */
-  | { readonly type: "continue" };
+  | { readonly type: "continue" }
+  | ActionRequest;
+
+/**
+ * Changes from the settings UI. The worker is the only writer of state. [pin] is checked by the
+ * worker for sets that have one.
+ */
+export type ActionRequest =
+  /** [pin] null = no PIN; otherwise the worker hashes it. The set's own pinHash is ignored. */
+  | { readonly type: "createSet"; readonly set: BlockSet; readonly pin: string | null }
+  /** Tightening applies now, loosening waits for the cooling-off. The PIN can't be changed here. */
+  | { readonly type: "editSet"; readonly set: BlockSet; readonly pin?: string }
+  | { readonly type: "setEnabled"; readonly setId: string; readonly enabled: boolean; readonly pin?: string }
+  | { readonly type: "cancelPending"; readonly setId: string }
+  | { readonly type: "suspend"; readonly setId: string; readonly pin?: string }
+  | { readonly type: "deleteSet"; readonly setId: string; readonly pin?: string }
+  /** Checks a PIN without changing anything (e.g. before opening the editor). */
+  | { readonly type: "verifyPin"; readonly setId: string; readonly pin: string };
+
+export type ActionResult =
+  | { readonly ok: true; readonly outcome?: ChangeOutcome; readonly suspension?: SuspensionCheck }
+  | { readonly ok: false; readonly error: string };
 
 /** Messages from the worker to a page's content script. */
 export type ContentMessage = {

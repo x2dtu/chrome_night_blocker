@@ -50,6 +50,11 @@ chrome.runtime.onMessage.addListener((message: Request, sender, sendResponse) =>
       if (sender.tab?.id === undefined) return false;
       void controller.continueFrom(sender.tab.id).then(sendResponse);
       return true;
+    default:
+      // Settings actions only from the extension's own pages, never from content scripts.
+      if (sender.id !== chrome.runtime.id || !sender.url?.startsWith(chrome.runtime.getURL(""))) return false;
+      void controller.action(message).then(sendResponse);
+      return true;
   }
   return false;
 });

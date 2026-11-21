@@ -13,7 +13,8 @@ const outdir = "dist";
 const options = {
   entryPoints: {
     background: "src/background/index.ts",
-    "options/options": "src/options/options.ts",
+    "options/options": "src/options/main.tsx",
+    "popup/popup": "src/popup/main.tsx",
     "block/block": "src/block/block.ts",
     content: "src/content/banner.ts",
   },

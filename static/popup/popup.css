@@ -1,0 +1,7 @@
+body { width: 340px; }
+.popup { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+.popup h1 { font-size: 18px; font-weight: 600; }
+.popup .card { padding: 14px; gap: 8px; border-radius: 16px; }
+.popup .set-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px; border-radius: 12px; }
+.popup .set-row:hover { background: var(--container-high); }
+.popup .site { font-weight: 600; overflow-wrap: anywhere; }

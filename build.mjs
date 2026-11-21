@@ -4,6 +4,7 @@
 //   node build.mjs --release  without dev helpers (for publishing)
 import * as esbuild from "esbuild";
 import { cpSync, rmSync, watch } from "node:fs";
+import { writeIcons } from "./tools/icons.mjs";
 
 const isWatch = process.argv.includes("--watch");
 const isRelease = process.argv.includes("--release");
@@ -31,6 +32,7 @@ const options = {
 
 function copyStatic() {
   cpSync("static", outdir, { recursive: true });
+  writeIcons(outdir);
 }
 
 rmSync(outdir, { recursive: true, force: true });

@@ -34,7 +34,8 @@ another computer (e.g. zip it, move it to the Windows laptop, unzip).
 3. Click **Load unpacked** and pick the `dist` folder.
 4. Optional: click the puzzle-piece icon in the toolbar and pin **Night Blocker**.
 
-Settings: on the extensions page click **Details → Extension options**.
+Settings: click the Night Blocker icon in the toolbar → **Open settings** (or on the extensions
+page, **Details → Extension options**).
 
 ## After changing the code
 
@@ -52,9 +53,10 @@ Incognito**. (Phase 7 turns Incognito off by policy instead.)
 Debugging: on the Night Blocker card, **Inspect views: service worker** opens DevTools for the
 background worker; errors also show up under the card's **Errors** button.
 
-## Trying it out before the settings page exists
+## Developer helpers
 
-Development builds (`npm run build` / `watch`) add helpers to the background worker's console.
+Block sets are normally made in the settings page. For quick tests (e.g. a window that starts in
+a minute), development builds (`npm run build` / `watch`) add helpers to the background worker's console.
 On the extension card click **Inspect views: service worker**, open the **Console**, and type:
 
 ```js
@@ -95,11 +97,14 @@ static/      manifest.json, HTML and CSS — copied to dist/ as-is
 src/
   background/  service worker: controller.ts (tabs, timing, saving — unit-tested with a fake
                browser), chromeApi.ts (the real chrome.* calls), index.ts (event wiring)
-  options/     settings page
+  options/     settings page (Preact): list, detail, editor
+  popup/       toolbar popup
+  ui/          shared UI logic (tested) and components
   block/       block page shown instead of a blocked site
   content/     content script (on-page warning banner)
   core/        pure logic with unit tests — no chrome.* APIs
   shared/      message types and block page URLs shared by the worker and pages
 tests/       Vitest tests
 build.mjs    esbuild bundling + static copy
+tools/       icon generator (draws the moon icon as PNGs at build time)
 ```

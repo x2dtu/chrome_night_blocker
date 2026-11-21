@@ -101,3 +101,15 @@ describe("editor draft", () => {
     expect(buildSet(valid(), null)).toMatchObject({ ok: true, pin: null });
   });
 });
+
+describe("popup site status", async () => {
+  const { siteStatus } = await import("../../src/ui/siteStatus");
+  it("describes the current site", () => {
+    const s = state();
+    expect(siteStatus("www.reddit.com", s, at("2026-11-16T23:45:00Z"), UTC)).toEqual({ headline: "Blocked", detail: "Bedtime: blocked until 8:00 AM", sets: ["Bedtime"] });
+    expect(siteStatus("www.reddit.com", s, at("2026-11-16T10:00:00Z"), UTC).headline).toBe("Not blocked");
+    expect(siteStatus("example.com", s, at("2026-11-16T23:45:00Z"), UTC)).toEqual({ headline: "Not blocked", detail: "Not in any block set", sets: [] });
+    const soft = blockSet({ ...set, mode: "soft", softLimits: softLimits({ maxOpens: 2 }) });
+    expect(siteStatus("reddit.com", state({ sets: [soft] }), at("2026-11-16T23:45:00Z"), UTC)).toMatchObject({ headline: "Limited", detail: "2/2 opens left" });
+  });
+});

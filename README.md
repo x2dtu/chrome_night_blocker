@@ -76,9 +76,12 @@ Things to check:
 3. **Not counting:** during an open, switch to another app or tab for over 15 s — coming back
    needs a new open. Time on the block page and while the laptop sleeps doesn't count
    (`nb.state()` → `usage` → `timeUsed`, in ms).
-4. **Reminders / warnings:** with `reminderNow()`, after a minute on wikipedia.org the page's own
+4. **Idle** (3 min without input, or screen locked; a tab playing audio is never idle): an open
+   with a time limit keeps counting and can run out while you're away; an open without one
+   ends after the grace period.
+5. **Reminders / warnings:** with `reminderNow()`, after a minute on wikipedia.org the page's own
    console (not the worker's) logs "wikipedia.org · 1 minute so far". (The banner itself comes in Phase 4.)
-5. **Restarts:** quit and reopen the browser, or click the card's reload ↻ — sets and usage stay.
+6. **Restarts:** quit and reopen the browser, or click the card's reload ↻ — sets and usage stay.
 
 Release builds (`npm run build:release`) leave the helpers out.
 

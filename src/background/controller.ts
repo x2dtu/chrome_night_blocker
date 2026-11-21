@@ -7,7 +7,7 @@ import { addSet, maintain, nextPendingAt } from "../core/stateActions";
 import type { Instant, Zone } from "../core/time";
 import { blockPageUrl, originalFromBlockUrl } from "../shared/blockUrl";
 import type { BlockPageModel, ContinueResult } from "../shared/messages";
-import type { BrowserApi, IdleState, TabInfo } from "./api";
+import type { BrowserApi, TabInfo } from "./api";
 import { bannerFor, blockPageModel } from "./presentation";
 
 /** Heartbeat alarm period; while it's missing, the laptop was asleep (or the browser closed). */
@@ -16,7 +16,7 @@ export const HEARTBEAT_MS = 30_000;
 export const MAX_GAP_MS = 90_000;
 /** Re-check at least this often, to catch clock changes. */
 export const MAX_TICK_MS = 60_000;
-/** No keyboard/mouse input for this long counts as away — unless the tab is playing audio. */
+/** No keyboard/mouse input for this long counts as idle — unless the tab is playing audio. */
 export const IDLE_SECONDS = 180;
 
 /** A navigation that triggered the update: [url] is where [tabId] is going. */
@@ -28,6 +28,7 @@ export interface Navigation {
 /** What the engine snapshot needs beyond AppState.usage. */
 interface Runtime {
   readonly foreground: string | null;
+  readonly idle?: boolean;
   readonly lastAccrualAt: Instant | null;
 }
 
@@ -130,6 +131,7 @@ export class Controller {
     this.engine = new BlockEngine(this.zone, this.state.sets, {
       usage: this.state.usage,
       foreground: runtime.foreground ?? null,
+      idle: runtime.idle ?? false,
       lastAccrualAt: runtime.lastAccrualAt ?? null,
     });
     this.savedState = JSON.stringify(serializeState(this.state));
@@ -162,11 +164,15 @@ export class Controller {
     ]);
     const tabs = rawTabs.map((t) => (nav && t.id === nav.tabId && !this.isBlockPage(t.url) ? { ...t, url: nav.url } : t));
     const foregroundTab = tabs.find((t) => t.active && t.windowId === focusedWindow) ?? null;
-    const foreground = this.foregroundHost(foregroundTab, idle);
-    if (foreground !== this.engine.foreground) this.engine.onForegroundChanged(foreground, now);
+    const foreground = this.foregroundHost(foregroundTab);
+    const isIdle = foreground !== null && (idle === "locked" || (idle === "idle" && !foregroundTab!.audible));
+    if (foreground !== this.engine.foreground || isIdle !== this.engine.idle) {
+      this.engine.onForegroundChanged(foreground, now, isIdle);
+    }
     this.engine.tick(now);
 
-    if (foregroundTab && foreground !== null && !this.isBlockPage(foregroundTab.url)) {
+    // Banners wait until the user is back (a warning still due then is sent then).
+    if (foregroundTab && foreground !== null && !isIdle && !this.isBlockPage(foregroundTab.url)) {
       const banner = bannerFor(this.engine.collectTimeWarnings(now), this.engine.collectReminders(now), foreground, this.state);
       if (banner) this.api.sendToTab(foregroundTab.id, banner);
     }
@@ -204,9 +210,8 @@ export class Controller {
   }
 
   /** The site the user is using: the focused tab's host (or the blocked site behind the block page). */
-  private foregroundHost(tab: TabInfo | null, idle: IdleState): string | null {
-    if (!tab || idle === "locked") return null;
-    if (idle === "idle" && !tab.audible) return null;
+  private foregroundHost(tab: TabInfo | null): string | null {
+    if (!tab) return null;
     const original = originalFromBlockUrl(this.api.blockPageBase, tab.url);
     return hostFromUrl(original ?? tab.url);
   }
@@ -224,7 +229,7 @@ export class Controller {
       this.savedState = stateJson;
     }
     const snap = this.engine.snapshot();
-    const runtime: Runtime = { foreground: snap.foreground, lastAccrualAt: snap.lastAccrualAt };
+    const runtime: Runtime = { foreground: snap.foreground, idle: snap.idle ?? false, lastAccrualAt: snap.lastAccrualAt };
     const runtimeJson = JSON.stringify(runtime);
     if (runtimeJson !== this.savedRuntime) {
       items.runtime = runtime;

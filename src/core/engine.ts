@@ -65,6 +65,8 @@ export interface EngineSnapshot {
   readonly usage: Readonly<Record<string, UsageEntry>>;
   /** Host on screen, or null. */
   readonly foreground: string | null;
+  /** The user is idle (no input, or screen locked) while [foreground] stays on screen. */
+  readonly idle?: boolean;
   readonly lastAccrualAt: Instant | null;
 }
 
@@ -91,17 +93,22 @@ interface ActivePair {
  *  - Time is only counted while the site is on screen inside an unlocked open, inside an active,
  *    enabled, non-paused window. It counts against every soft set that matches the site.
  *  - Leaving and returning within the set's grace time continues the same open.
+ *  - Idle (no input / screen locked) with the site still on screen: opens with a time limit keep
+ *    counting, so idling can't save time; opens without one count as left (grace, then a new
+ *    open is needed). Reminder-mode time doesn't count while idle.
  */
 export class BlockEngine {
   private _sets: readonly BlockSet[];
   private readonly _usage: Map<string, UsageEntry>;
   private _foreground: string | null;
+  private _idle: boolean;
   private lastAccrualAt: Instant | null;
 
   constructor(private readonly zone: Zone, sets: readonly BlockSet[] = [], snapshot?: Partial<EngineSnapshot>) {
     this._sets = sets;
     this._usage = new Map(Object.entries(snapshot?.usage ?? {}));
     this._foreground = snapshot?.foreground ?? null;
+    this._idle = this._foreground !== null && (snapshot?.idle ?? false);
     this.lastAccrualAt = snapshot?.lastAccrualAt ?? null;
   }
 
@@ -117,8 +124,12 @@ export class BlockEngine {
     return this._foreground;
   }
 
+  get idle(): boolean {
+    return this._idle;
+  }
+
   snapshot(): EngineSnapshot {
-    return { usage: this.usage, foreground: this._foreground, lastAccrualAt: this.lastAccrualAt };
+    return { usage: this.usage, foreground: this._foreground, idle: this._idle, lastAccrualAt: this.lastAccrualAt };
   }
 
   updateSets(newSets: readonly BlockSet[], now: Instant): Decision {
@@ -128,17 +139,20 @@ export class BlockEngine {
     return this.evaluate(this._foreground, now);
   }
 
-  onForegroundChanged(host: string | null, now: Instant): Decision {
+  /** [idle]: no input or screen locked, with [host] still on screen. */
+  onForegroundChanged(host: string | null, now: Instant, idle = false): Decision {
     this.accrue(now);
     const old = this._foreground;
+    const oldIdle = this._idle;
     this._foreground = host;
+    this._idle = host !== null && idle;
     for (const [key, u] of [...this._usage]) {
       const session = u.session;
       if (!session) continue;
       const set = this.setById(u.setId);
       if (!set) continue;
-      const wasOn = old !== null && keyMatches(set, u, old);
-      const isOn = host !== null && keyMatches(set, u, host);
+      const wasOn = isPresent(set, u, old, oldIdle);
+      const isOn = isPresent(set, u, host, this._idle);
       if (wasOn && !isOn) {
         this._usage.set(key, { ...u, session: { ...session, leftAt: now } });
       } else if (isOn && session.leftAt !== null) {
@@ -305,6 +319,7 @@ export class BlockEngine {
     for (const pair of this.activePairs(fg, now)) {
       const l = pair.set.softLimits;
       if (pair.set.mode === "reminder") {
+        if (this._idle) continue; // not counting
         result.push({ pair, interval: l.reminderInterval ?? DEFAULT_REMINDER_INTERVAL });
       } else if (pair.set.mode === "soft" && l.reminderInterval !== null) {
         const u = this._usage.get(pair.key);
@@ -367,11 +382,13 @@ export class BlockEngine {
     const elapsed = now - from;
     for (const pair of this.activePairs(fg, from)) {
       if (pair.set.mode === "reminder") {
+        if (this._idle) continue;
         const u = this._usage.get(pair.key) ?? emptyUsage(pair);
         this._usage.set(pair.key, { ...u, timeUsed: u.timeUsed + elapsed });
         continue;
       }
       if (pair.set.mode !== "soft") continue;
+      if (this._idle && !isTimed(pair.set.softLimits)) continue;
       const u = this._usage.get(pair.key);
       if (!u) continue;
       const session = liveSession(u, pair.set.softLimits, from);
@@ -417,6 +434,16 @@ function liveSession(u: UsageEntry, limits: SoftLimits, now: Instant): OpenSessi
   if (s.leftAt !== null && now - s.leftAt > limits.graceTime) return null;
   if (limits.perOpenLimit !== null && s.used >= limits.perOpenLimit) return null;
   return s;
+}
+
+/** Opens with a time limit keep counting while idle. */
+function isTimed(l: SoftLimits): boolean {
+  return l.perOpenLimit !== null || l.totalLimit !== null;
+}
+
+/** Whether the user is "on" a usage entry's site: on screen, and not idle unless the open is timed. */
+function isPresent(set: BlockSet, u: UsageEntry, host: string | null, idle: boolean): boolean {
+  return host !== null && keyMatches(set, u, host) && (!idle || isTimed(set.softLimits));
 }
 
 /** Whether a usage entry covers [host] — for shared limits, any of the set's sites. */

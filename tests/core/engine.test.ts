@@ -287,6 +287,38 @@ describe("BlockEngine", () => {
     expect(e.nextEvaluationAt(now)).toBe(at("2026-11-17T00:00:00Z"));
   });
 
+  // --- Idle ---
+
+  it("idle: timed opens keep counting, untimed ones count as left", () => {
+    const timed = engine(soft({ perOpenLimit: min(5) }));
+    timed.onForegroundChanged(fgA, now);
+    timed.unlock(now);
+    timed.onForegroundChanged(fgA, now, true);
+    expect(timed.idle).toBe(true);
+    advance(min(5));
+    expect(timed.tick(now).type).toBe("softGate"); // the open ran out while idle
+
+    now = at("2026-11-16T10:00:00Z");
+    const untimed = engine(soft({ maxOpens: 3 }));
+    untimed.onForegroundChanged(fgA, now);
+    untimed.unlock(now);
+    untimed.onForegroundChanged(fgA, now, true);
+    advance(sec(10));
+    expect(untimed.onForegroundChanged(fgA, now).type).toBe("inSession"); // back within grace
+    untimed.onForegroundChanged(fgA, now, true);
+    advance(sec(20));
+    expect(gate(untimed.onForegroundChanged(fgA, now)).opens).toEqual({ used: 1, max: 3 });
+    expect(usage(untimed)[0]!.timeUsed).toBe(0);
+  });
+
+  it("idle survives a snapshot", () => {
+    const e = engine(soft({ totalLimit: min(10) }));
+    e.onForegroundChanged(fgA, now);
+    e.unlock(now);
+    e.onForegroundChanged(fgA, now, true);
+    expect(new BlockEngine(UTC, e.sets, e.snapshot()).idle).toBe(true);
+  });
+
   // --- Restart ---
 
   it("resumes from a snapshot", () => {

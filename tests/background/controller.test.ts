@@ -221,24 +221,51 @@ describe("Controller", () => {
     expect((await usage())[0]!.opensUsed).toBe(1);
   });
 
-  it("idle without audio and locked screens don't count; idle with audio does", async () => {
-    await openSession({ graceTime: min(60) });
+  it("timed opens keep counting while idle or locked, and end on time", async () => {
+    await openSession({ totalLimit: min(10) });
     await pass(min(1));
     b.idle = "idle";
     await c.refresh(); // idle.onStateChanged
     await pass(min(5));
-    b.idle = "active";
-    await c.refresh();
-    expect((await usage())[0]!.timeUsed).toBe(min(1));
-    b.tabs = b.tabs.map((t) => ({ ...t, audible: true }));
-    b.idle = "idle";
-    await c.refresh();
-    await pass(min(5));
     expect((await usage())[0]!.timeUsed).toBe(min(6));
     b.idle = "locked";
     await c.refresh();
-    await pass(min(5));
-    expect((await usage())[0]!.timeUsed).toBe(min(6));
+    await pass(min(4));
+    expect(b.urlOf(1)).toBe(blockOf(REDDIT)); // used up while away
+    expect(b.sent).toEqual([]); // no banners while idle
+  });
+
+  it("untimed opens end when idle past the grace period", async () => {
+    await openSession({ totalLimit: null });
+    b.idle = "idle";
+    await c.refresh();
+    await pass(min(1));
+    b.idle = "active";
+    await c.refresh();
+    expect(b.urlOf(1)).toBe(blockOf(REDDIT)); // needs a new open
+    expect((await usage())[0]!.timeUsed).toBe(0);
+  });
+
+  it("idle with audio playing counts as using the site", async () => {
+    await openSession({ totalLimit: null });
+    b.tabs = b.tabs.map((t) => ({ ...t, audible: true }));
+    b.idle = "idle";
+    await c.refresh();
+    await pass(min(2));
+    expect(b.urlOf(1)).toBe(REDDIT);
+    expect((await usage())[0]!.timeUsed).toBe(min(2));
+  });
+
+  it("reminder time doesn't count while idle", async () => {
+    await c.addSet(blockSet({ id: "r", name: "Awareness", mode: "reminder", targets: [website("reddit.com")], windows: allWeek,
+      softLimits: softLimits({ reminderInterval: min(15) }) }));
+    b.open(1, REDDIT);
+    await c.refresh({ tabId: 1, url: REDDIT });
+    await pass(min(2));
+    b.idle = "locked";
+    await c.refresh();
+    await pass(min(10));
+    expect((await usage())[0]!.timeUsed).toBe(min(2));
   });
 
   it("a gap with no heartbeat (sleep) isn't counted", async () => {

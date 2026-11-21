@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Controller, MAX_TICK_MS } from "../../src/background/controller";
 import { deserializeState } from "../../src/core/appState";
-import { type BlockSet, blockSet, softLimits, website } from "../../src/core/model";
+import { ADULT_SITES, type BlockSet, blockSet, softLimits, website } from "../../src/core/model";
+import { resetAdultList } from "../../src/shared/adultList";
 import { MINUTES_PER_DAY, dayWindow } from "../../src/core/schedule";
 import { MONDAY, minutes as min, seconds as sec } from "../../src/core/time";
 import { allWeek, at } from "../core/helpers";
@@ -391,5 +392,23 @@ describe("Controller actions (settings UI)", () => {
     expect(r.ok && r.suspension).toEqual({ type: "allowed", remainingAfter: 2 });
     expect((await current()).suspendedUntil).toBe(monday + min(1));
     expect((await c.action({ type: "suspend", setId: "s" })).ok).toBe(false);
+  });
+});
+
+describe("adult-site filter", () => {
+  afterEach(resetAdultList);
+
+  it("loads the list when a set uses it, blocks listed sites (not via the fast path), shows 18+", async () => {
+    const b = new FakeBrowser(at("2026-11-16T10:00:00Z"));
+    b.storage.state = { version: 1, sets: [blockSet({ id: "a", name: "No adult sites", mode: "hard", targets: [ADULT_SITES], windows: allWeek })] };
+    const c = new Controller(b); // a fresh worker: the list isn't loaded yet
+    b.open(1, "https://www.adult.example/x");
+    b.open(2, "https://example.com/");
+    await c.refresh();
+    expect(b.urlOf(1)).toBe(`${BASE}#https://www.adult.example/x`);
+    expect(b.urlOf(2)).toBe("https://example.com/");
+    expect(b.rules).toEqual([]);
+    const page = await c.getBlockPage("https://www.adult.example/x");
+    expect(page).toMatchObject({ status: "blocked", adult: true, setName: "No adult sites" });
   });
 });

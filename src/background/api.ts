@@ -28,6 +28,8 @@ export interface BrowserApi {
   scheduleTick(at: Instant): void;
   /** Redirect main-frame requests to these domains (and subdomains) straight to the block page. */
   setRedirectRules(domains: readonly string[]): Promise<void>;
+  /** The bundled adult-site list file (data/adult_domains.bin). */
+  loadAdultList(): Promise<ArrayBuffer>;
   load(key: string): Promise<unknown>;
   save(items: Record<string, unknown>): Promise<void>;
 }

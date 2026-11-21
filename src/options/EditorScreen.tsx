@@ -10,13 +10,12 @@ import {
 } from "../ui/components";
 import { buildSet, type Draft, draftFrom, previewSet } from "../ui/draft";
 import { SET_COLORS, targetLabel } from "../ui/format";
-import { act, navigate } from "../ui/hooks";
+import { ADULT_LIST_DATE, adultListSizeLabel } from "../shared/adultList";
+import { act, navigate, useAdultList } from "../ui/hooks";
 import { outcomeText } from "./actions";
 import { useNotify } from "./app";
 import { ScheduleEditor } from "./ScheduleEditor";
 
-/** Phase 6 adds the adult-site list; until then the switch stays hidden. */
-const ADULT_LIST_AVAILABLE = false;
 
 /** Create ([setId] null) or edit a block set. Editing a set with a PIN asks for it first. */
 export function EditorScreen({ state, setId }: { state: AppState; setId: string | null }) {
@@ -51,7 +50,9 @@ function Editor({ state, original, pin, onBack }: { state: AppState; original: A
   const [saving, setSaving] = useState(false);
   const update = (fields: Partial<Draft>) => setDraft((old) => ({ ...old, ...fields }));
   const others = state.sets.filter((s) => s.id !== d.id);
-  const overlaps = useMemo(() => findOverlaps(previewSet(d), others), [d.targets, d.windows, state.sets]);
+  const wantsAdult = d.targets.some((t) => t.kind === "adult");
+  const listReady = useAdultList(wantsAdult || others.some((s) => s.targets.some((t) => t.kind === "adult")));
+  const overlaps = useMemo(() => findOverlaps(previewSet(d), others), [d.targets, d.windows, state.sets, listReady]);
   const shared = d.limitScope === "wholeSet";
 
   const save = async () => {
@@ -120,14 +121,20 @@ function Editor({ state, original, pin, onBack }: { state: AppState; original: A
         <WebsiteAdder onAdd={(t) => {
           if (!d.targets.some((x) => targetKey(x) === targetKey(t))) update({ targets: [...d.targets, t] });
         }} />
-        {ADULT_LIST_AVAILABLE && (
-          <SwitchSetting
-            label="Block adult websites"
-            hint="A built-in list of known adult sites"
-            checked={d.targets.some((t) => t.kind === "adult")}
-            onChange={(on) => update({ targets: on ? [...d.targets, { kind: "adult" }] : d.targets.filter((t) => t.kind !== "adult") })}
-          />
-        )}
+        <div class="row">
+          <SiteIcon target={{ kind: "adult" }} size={36} />
+          <div class="grow">
+            <SwitchSetting
+              label="Block adult websites"
+              hint={`${adultListSizeLabel()} known sites`}
+              info={`Blocks every site on a built-in list of ${adultListSizeLabel()} adult domains (and their subdomains), ` +
+                `from The Block List Project, last updated ${ADULT_LIST_DATE}. They count as one item for soft-block limits.\n\n` +
+                "Brand-new sites may not be on the list yet. The list is checked on your computer; nothing is sent anywhere."}
+              checked={wantsAdult}
+              onChange={(on) => update({ targets: on ? [...d.targets, { kind: "adult" }] : d.targets.filter((t) => t.kind !== "adult") })}
+            />
+          </div>
+        </div>
       </SectionCard>
 
       <SectionCard

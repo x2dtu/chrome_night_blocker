@@ -33,6 +33,7 @@ main {
   display: grid; place-items: center;
 }
 .icon img { width: 64px; height: 64px; }
+.icon .badge { font-size: 30px; font-weight: 700; }
 
 h1 { margin: 0; font-size: 28px; font-weight: 500; overflow-wrap: anywhere; }
 

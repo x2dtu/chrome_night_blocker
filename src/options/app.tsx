@@ -1,7 +1,8 @@
 import { createContext } from "preact";
 import { useContext, useState } from "preact/hooks";
 import { Toast } from "../ui/components";
-import { useAppState, useHash } from "../ui/hooks";
+import { usesAdultList } from "../shared/adultList";
+import { useAdultList, useAppState, useHash } from "../ui/hooks";
 import { DetailScreen } from "./DetailScreen";
 import { EditorScreen } from "./EditorScreen";
 import { ListScreen } from "./ListScreen";
@@ -16,6 +17,7 @@ export function App() {
   const state = useAppState();
   const hash = useHash();
   const [toast, setToast] = useState<string | null>(null);
+  useAdultList(!!state && usesAdultList(state.sets));
   if (!state) return null;
 
   const [, screen, id] = hash.split("/");

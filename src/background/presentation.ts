@@ -10,13 +10,14 @@ import type { BlockPageModel, ContentMessage, SoftGateInfo } from "../shared/mes
 const FALLBACK_COLOR = "#9aaaff";
 
 export function blockPageModel(decision: Decision, host: string, state: AppState): BlockPageModel {
-  const base = { host, setName: "", color: FALLBACK_COLOR, message: "", streakDays: 0, reasons: [], soft: null };
+  const base = { host, adult: false, setName: "", color: FALLBACK_COLOR, message: "", streakDays: 0, reasons: [], soft: null };
   if (decision.type === "blocked") {
     const primary = decision.blockers[0]!;
     const set = setById(state, primary.setId);
     return {
       ...base,
       status: "blocked",
+      adult: decision.blockers.some((b) => b.target.kind === "adult"),
       setName: primary.setName,
       color: set?.color ?? FALLBACK_COLOR,
       message: set?.message ?? "",
@@ -39,6 +40,7 @@ export function blockPageModel(decision: Decision, host: string, state: AppState
     return {
       ...base,
       status: "softGate",
+      adult: decision.gates.some((g) => g.target.kind === "adult"),
       setName: gate.setName,
       color: set?.color ?? FALLBACK_COLOR,
       message: set?.message ?? "",

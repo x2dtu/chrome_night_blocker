@@ -1,5 +1,6 @@
 import type { BrowserApi, IdleState, TabInfo } from "../../src/background/api";
 import { type Instant, UTC, type Zone } from "../../src/core/time";
+import { encodeDomainList } from "../../src/core/domainHashSet";
 import type { ContentMessage } from "../../src/shared/messages";
 
 export const BASE = "chrome-extension://test/block/block.html";
@@ -44,6 +45,9 @@ export class FakeBrowser implements BrowserApi {
   async setRedirectRules(domains: readonly string[]) {
     this.rules = domains;
   }
+
+  /** The test adult list: adult.example and its subdomains. */
+  loadAdultList = async () => encodeDomainList(["adult.example"]);
 
   load = async (key: string) => structuredClone(this.storage[key]);
 

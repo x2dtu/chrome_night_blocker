@@ -19,9 +19,7 @@ async function load(): Promise<void> {
   const host = hostFromUrl(url) ?? "This site";
   $("site").textContent = host;
   document.title = `${host} · Blocked`;
-  const favicon = $<HTMLImageElement>("favicon");
-  const src = `/_favicon/?pageUrl=${encodeURIComponent(url)}&size=64`;
-  if (favicon.getAttribute("src") !== src) favicon.src = src;
+
   try {
     const request: Request = { type: "getBlockPage", url };
     model = (await chrome.runtime.sendMessage(request)) as BlockPageModel;
@@ -34,6 +32,12 @@ async function load(): Promise<void> {
 
 function render(m: BlockPageModel): void {
   document.documentElement.style.setProperty("--accent", m.color);
+  // Adult sites get an "18+" badge rather than their own icon.
+  const favicon = $<HTMLImageElement>("favicon");
+  favicon.hidden = m.adult;
+  $("badge").hidden = !m.adult;
+  const src = `/_favicon/?pageUrl=${encodeURIComponent(originalUrl())}&size=64`;
+  if (!m.adult && favicon.getAttribute("src") !== src) favicon.src = src;
   const allowed = m.status === "allowed";
   $("returning").hidden = !allowed;
   $("chip").parentElement!.hidden = allowed;

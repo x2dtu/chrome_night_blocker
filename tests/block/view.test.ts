@@ -5,7 +5,7 @@ import type { BlockPageModel, SoftGateInfo } from "../../src/shared/messages";
 
 const soft: SoftGateInfo = { unlockDelay: sec(10), opensUsed: 2, maxOpens: 4, timeLeft: min(8) + sec(30), totalLimit: min(20), limitsSummary: "3 min per open" };
 const model = (fields: Partial<BlockPageModel> = {}): BlockPageModel => ({
-  status: "softGate", host: "www.reddit.com", setName: "Night Socials", color: "#5c6bc0",
+  status: "softGate", host: "www.reddit.com", adult: false, setName: "Night Socials", color: "#5c6bc0",
   message: "", streakDays: 0, reasons: [], soft, ...fields,
 });
 

@@ -1,4 +1,5 @@
 import { systemZone } from "../core/time";
+import { fetchBundledList } from "../shared/adultList";
 import type { ContentMessage } from "../shared/messages";
 import type { BrowserApi, IdleState, TabInfo } from "./api";
 import { IDLE_SECONDS } from "./controller";
@@ -80,6 +81,8 @@ export function chromeApi(onTimer: () => void): BrowserApi {
         }],
       });
     },
+
+    loadAdultList: fetchBundledList,
 
     async load(key) {
       return (await chrome.storage.local.get(key))[key];

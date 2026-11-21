@@ -6,6 +6,7 @@ import type { BlockSet } from "../core/model";
 import { hashPin, isValidPin, verifyPin } from "../core/pin";
 import { addSet, cancelPending, deleteSet, maintain, nextPendingAt, requestEdit, setById, suspend } from "../core/stateActions";
 import type { Instant, Zone } from "../core/time";
+import { ensureAdultList, usesAdultList } from "../shared/adultList";
 import { blockPageUrl, originalFromBlockUrl } from "../shared/blockUrl";
 import type { ActionRequest, ActionResult, BlockPageModel, ContinueResult } from "../shared/messages";
 import type { BrowserApi, TabInfo } from "./api";
@@ -198,6 +199,17 @@ export class Controller {
     this.savedState = JSON.stringify(serializeState(this.state));
     this.savedRuntime = JSON.stringify(runtime);
     this.loaded = true;
+    await this.ensureAdultList();
+  }
+
+  /** Loads the adult-site list when a block set uses it (~9 ms; once per worker start). */
+  private async ensureAdultList(): Promise<void> {
+    if (!usesAdultList(this.state.sets)) return;
+    try {
+      await ensureAdultList(() => this.api.loadAdultList());
+    } catch {
+      // Logged by ensureAdultList; other blocking keeps working, and the next update retries.
+    }
   }
 
   private async update(nav?: Navigation): Promise<Context> {
@@ -218,6 +230,7 @@ export class Controller {
 
     // Pending changes and streaks.
     this.state = maintain(this.state, now, this.zone);
+    await this.ensureAdultList();
     if (this.state.sets !== this.engine.sets) this.engine.updateSets(this.state.sets, now);
 
     const [rawTabs, focusedWindow, idle] = await Promise.all([

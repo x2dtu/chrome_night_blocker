@@ -1,5 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import { type AppState, deserializeState } from "../core/appState";
+import { ensureAdultList, fetchBundledList, isAdultListLoaded } from "../shared/adultList";
 import type { ActionRequest, ActionResult } from "../shared/messages";
 
 /** The stored state, live: re-reads when the worker saves. Null until loaded. */
@@ -19,6 +20,15 @@ export function useAppState(): AppState | null {
     };
   }, []);
   return state;
+}
+
+/** Loads the adult-site list when [needed]; returns whether it's ready (re-renders when it is). */
+export function useAdultList(needed: boolean): boolean {
+  const [ready, setReady] = useState(isAdultListLoaded());
+  useEffect(() => {
+    if (needed && !ready) void ensureAdultList(fetchBundledList).then(() => setReady(true), () => undefined);
+  }, [needed]);
+  return ready;
 }
 
 /** Current time, refreshed every [periodMs], so status lines stay current. */

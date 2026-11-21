@@ -6,7 +6,8 @@ import { hostFromUrl } from "../core/hosts";
 import { systemZone } from "../core/time";
 import { originalFromBlockUrl } from "../shared/blockUrl";
 import { ColorDot, Pill } from "../ui/components";
-import { useAppState, useNow } from "../ui/hooks";
+import { usesAdultList } from "../shared/adultList";
+import { useAdultList, useAppState, useNow } from "../ui/hooks";
 import { siteStatus } from "../ui/siteStatus";
 import { headerSubtitle, stateLabel, statusOf } from "../ui/status";
 
@@ -32,7 +33,9 @@ function Popup() {
   const state = useAppState();
   const now = useNow(5000);
   const host = useCurrentHost();
+  const listReady = useAdultList(!!state && usesAdultList(state.sets));
   if (!state) return null;
+  void listReady; // re-render once the list is in, so adult sites show as blocked
   const zone = systemZone();
   const statuses = state.sets.map((set) => ({ set, status: statusOf(set, state, now, zone) }));
   const on = statuses.filter(({ status }) => status.state === "active" || status.state === "paused");

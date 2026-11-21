@@ -46,6 +46,8 @@ export interface BlockPageModel {
   /** "allowed" means the page should go back to the site (the worker does that). */
   readonly status: "blocked" | "softGate" | "allowed";
   readonly host: string;
+  /** Blocked because it's on the adult-site list: show an "18+" badge, not the site's icon. */
+  readonly adult: boolean;
   readonly setName: string;
   readonly color: string;
   readonly message: string;

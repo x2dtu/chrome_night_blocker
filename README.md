@@ -90,6 +90,20 @@ Things to check:
 
 Release builds (`npm run build:release`) leave the helpers out.
 
+## Adult-site list
+
+`static/data/adult_domains.bin` (~7.5 MB, about 937,000 domains) is the same file as in the
+Android app: [The Block List Project](https://github.com/blocklistproject/Lists) porn list
+(public domain / MIT) as sorted 64-bit FNV-1a hashes. It's only loaded when a block set has
+"Block adult websites" on, and checked locally. To update it (then change `ADULT_LIST_DATE` in
+`src/shared/adultList.ts`):
+
+```sh
+mkdir -p /tmp/lists && curl -sSL -o /tmp/lists/porn-nl.txt \
+  https://raw.githubusercontent.com/blocklistproject/Lists/master/alt-version/porn-nl.txt
+python3 -I tools/build_domain_list.py /tmp/lists/porn-nl.txt static/data/adult_domains.bin
+```
+
 ## Layout
 
 ```
@@ -106,5 +120,5 @@ src/
   shared/      message types and block page URLs shared by the worker and pages
 tests/       Vitest tests
 build.mjs    esbuild bundling + static copy
-tools/       icon generator (draws the moon icon as PNGs at build time)
+tools/       icon generator (moon icon PNGs at build time), adult-list builder
 ```

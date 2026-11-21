@@ -8,19 +8,30 @@
   </head>
   <body>
     <main>
-      <p id="set-name" class="set-name"></p>
+      <div class="icon"><img id="favicon" alt="" width="64" height="64" /></div>
       <h1 id="site">This site</h1>
-      <p id="headline"></p>
-      <p id="message" class="message"></p>
-      <ul id="reasons" class="reasons"></ul>
-      <p id="streak" class="muted"></p>
-      <section id="soft" hidden>
-        <p id="soft-status"></p>
-        <p id="soft-limits" class="muted"></p>
-        <button id="continue" type="button" disabled>Continue</button>
+      <div class="chip"><span class="dot"></span><span id="chip"></span></div>
+      <p id="message" class="message" hidden></p>
+      <p id="streak" class="streak" hidden></p>
+      <section id="why" class="why" hidden>
+        <h2>Why you're seeing this</h2>
+        <ul id="reasons"></ul>
       </section>
-      <p id="error" class="error"></p>
-      <button id="new-tab" type="button" class="secondary">Go to a new tab</button>
+
+      <div id="hard-controls" class="controls" hidden>
+        <button id="leave-primary" type="button" class="primary">Go to a new tab</button>
+      </div>
+
+      <div id="soft-controls" class="controls" hidden>
+        <div id="dots" class="dots"></div>
+        <p id="stats" class="stats"></p>
+        <p id="limits" class="muted small"></p>
+        <button id="continue" type="button" class="primary" disabled>Continue</button>
+        <button id="leave" type="button" class="text">Go to a new tab</button>
+      </div>
+
+      <p id="returning" class="muted" hidden>Taking you back…</p>
+      <p id="error" class="error" role="alert"></p>
     </main>
     <script src="block.js"></script>
   </body>

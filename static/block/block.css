@@ -1,20 +1,81 @@
-:root { color-scheme: dark; }
+/* Same look as the Android block screen: night palette, gradient in the set's color. */
+:root {
+  color-scheme: dark;
+  --ink: #0b0d18;
+  --muted: #b4b9d2;
+  --accent: #9aaaff;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
 body {
-  --set-color: #5c6bc0;
-  margin: 0; min-height: 100vh; display: grid; place-items: center;
-  font: 16px/1.5 system-ui, sans-serif; color: #e8e9f3;
-  background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--set-color) 45%, #0f1222) 0%, #0f1222 60%);
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 28px;
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #fff;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 35%, var(--ink)) 0%, var(--ink) 50%, var(--ink) 100%) fixed;
 }
-main { text-align: center; padding: 24px; max-width: 560px; }
-h1 { margin: 0 0 4px; font-size: 28px; }
-.set-name { color: var(--set-color); font-weight: 600; margin: 0 0 8px; }
-.message { font-style: italic; }
-.reasons { list-style: none; padding: 0; color: #c5c8dc; }
-.muted { color: #9aa0b8; }
-.error { color: #ff8a80; }
-button {
-  margin-top: 16px; padding: 10px 20px; border: 0; border-radius: 999px;
-  background: #e8e9f3; color: #0f1222; font: inherit; font-weight: 600; cursor: pointer;
+main {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
 }
-button:disabled { opacity: 0.5; cursor: default; }
-button.secondary { background: transparent; color: #e8e9f3; border: 1px solid #4a4f6e; }
+[hidden] { display: none !important; }
+
+.icon {
+  width: 96px; height: 96px; border-radius: 50%;
+  background: rgb(255 255 255 / 8%);
+  display: grid; place-items: center;
+}
+.icon img { width: 64px; height: 64px; }
+
+h1 { margin: 0; font-size: 28px; font-weight: 500; overflow-wrap: anywhere; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  font-size: 14px; font-weight: 500;
+}
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+.message { margin: 10px 0; font-size: 22px; font-style: italic; }
+.streak { margin: 0; color: var(--accent); font-size: 14px; font-weight: 500; }
+
+.why {
+  width: 100%; text-align: left;
+  padding: 14px; border-radius: 16px;
+  background: rgb(255 255 255 / 6%);
+}
+.why h2 { margin: 0 0 4px; font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0.02em; }
+.why ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; }
+
+.controls { width: 100%; margin-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+
+.dots { display: flex; gap: 12px; }
+.dots span { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--accent); }
+.dots .left { background: var(--accent); }
+.dots .next { animation: blink 0.6s ease-in-out infinite alternate; }
+@keyframes blink { from { background: var(--accent); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .dots .next { animation: none; background: color-mix(in srgb, var(--accent) 50%, transparent); } }
+
+.stats { margin: 0; font-size: 18px; font-weight: 500; }
+.muted { color: var(--muted); margin: 0; }
+.small { font-size: 13px; }
+.error { color: #ff8a93; margin: 0; min-height: 1em; font-size: 14px; }
+
+button { font: inherit; cursor: pointer; border: 0; }
+button.primary {
+  width: 100%; height: 54px; border-radius: 999px;
+  background: var(--accent); color: var(--ink);
+  font-size: 17px; font-weight: 600;
+}
+button.primary:disabled { background: rgb(255 255 255 / 8%); color: var(--muted); cursor: default; }
+button.text { background: none; color: #fff; padding: 10px; width: 100%; border-radius: 999px; }
+button.text:hover { background: rgb(255 255 255 / 6%); }
+button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }

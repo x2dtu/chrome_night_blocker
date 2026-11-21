@@ -1,83 +1,113 @@
-// Block page (functional version; Phase 3 does the real design). The blocked URL is after "#".
+// The block page. The blocked URL is after "#"; the worker says what to show.
 
 import { hostFromUrl } from "../core/hosts";
-import { softStatusLine } from "../background/presentation";
 import type { BlockPageModel, ContinueResult, Request } from "../shared/messages";
+import { chipText, continueLabel, openDots, resetKey, softStats, streakText } from "./view";
 
-const $ = (id: string) => document.getElementById(id)!;
-const continueButton = $("continue") as HTMLButtonElement;
+const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+const continueButton = $<HTMLButtonElement>("continue");
 
 let model: BlockPageModel | null = null;
-let unlockAt = 0;
+let shownKey = "";
+let deadline = 0;
 let countdown: ReturnType<typeof setInterval> | undefined;
 
-function originalUrl(): string {
-  return location.hash.slice(1);
-}
+const originalUrl = () => location.hash.slice(1);
 
 async function load(): Promise<void> {
   const url = originalUrl();
-  $("site").textContent = hostFromUrl(url) ?? "This site";
-  const request: Request = { type: "getBlockPage", url };
-  model = (await chrome.runtime.sendMessage(request)) as BlockPageModel;
-  render();
+  const host = hostFromUrl(url) ?? "This site";
+  $("site").textContent = host;
+  document.title = `${host} · Blocked`;
+  const favicon = $<HTMLImageElement>("favicon");
+  const src = `/_favicon/?pageUrl=${encodeURIComponent(url)}&size=64`;
+  if (favicon.getAttribute("src") !== src) favicon.src = src;
+  try {
+    const request: Request = { type: "getBlockPage", url };
+    model = (await chrome.runtime.sendMessage(request)) as BlockPageModel;
+  } catch (e) {
+    $("error").textContent = `Couldn't reach Night Blocker: ${String(e)}`;
+    return;
+  }
+  render(model);
 }
 
-function render(): void {
-  if (!model) return;
-  document.body.style.setProperty("--set-color", model.color);
-  $("headline").textContent = model.status === "softGate" ? "is limited right now." : model.status === "blocked" ? "is blocked right now." : "is allowed again…";
-  $("set-name").textContent = model.setName;
-  $("message").textContent = model.message;
-  $("streak").textContent = model.streakDays > 0 ? `🔥 ${model.streakDays}-day streak` : "";
-  $("reasons").replaceChildren(...model.reasons.map((r) => Object.assign(document.createElement("li"), { textContent: r })));
-  const soft = model.soft;
-  $("soft").hidden = soft === null;
-  if (soft) {
-    $("soft-status").textContent = softStatusLine(soft);
-    $("soft-limits").textContent = soft.limitsSummary;
-    if (countdown === undefined) startCountdown(soft.unlockDelay);
+function render(m: BlockPageModel): void {
+  document.documentElement.style.setProperty("--accent", m.color);
+  const allowed = m.status === "allowed";
+  $("returning").hidden = !allowed;
+  $("chip").parentElement!.hidden = allowed;
+
+  $("chip").textContent = chipText(m);
+  show("message", m.message.trim() ? `“${m.message.trim()}”` : "");
+  show("streak", streakText(m.streakDays));
+  $("why").hidden = m.reasons.length === 0;
+  $("reasons").replaceChildren(...m.reasons.map((r) => Object.assign(document.createElement("li"), { textContent: r })));
+
+  $("hard-controls").hidden = m.status !== "blocked";
+  $("soft-controls").hidden = m.status !== "softGate";
+  const soft = m.soft;
+  if (m.status === "softGate" && soft) {
+    $("dots").replaceChildren(...(soft.maxOpens === null ? [] : openDots(soft.opensUsed, soft.maxOpens).map((state) =>
+      Object.assign(document.createElement("span"), { className: state }))));
+    show("stats", softStats(soft));
+    show("limits", soft.limitsSummary);
+    const key = resetKey(m);
+    if (key !== shownKey) startCountdown(soft.unlockDelay);
+    shownKey = key;
+  } else {
+    shownKey = resetKey(m);
   }
 }
 
-/** The unlock delay restarts whenever the page is shown again. */
+function show(id: string, text: string): void {
+  $(id).textContent = text;
+  $(id).hidden = text === "";
+}
+
+/** Counts down to a fixed deadline (not 1 per tick), so a busy page can't make the unlock late. */
 function startCountdown(delay: number): void {
   clearInterval(countdown);
-  unlockAt = Date.now() + delay;
+  deadline = performance.now() + delay;
   const step = () => {
-    const left = unlockAt - Date.now();
-    continueButton.disabled = left > 0;
-    continueButton.textContent = left > 0 ? `Continue in ${Math.ceil(left / 1000)} s` : "Continue";
-    if (left <= 0) clearInterval(countdown);
+    const secondsLeft = Math.max(0, Math.ceil((deadline - performance.now()) / 1000));
+    continueButton.disabled = secondsLeft > 0;
+    continueButton.textContent = continueLabel(secondsLeft);
+    if (secondsLeft === 0) clearInterval(countdown);
   };
   step();
-  countdown = setInterval(step, 250);
+  countdown = setInterval(step, 200);
 }
 
 continueButton.addEventListener("click", async () => {
   continueButton.disabled = true;
+  $("error").textContent = "";
   const request: Request = { type: "continue" };
   const result = (await chrome.runtime.sendMessage(request)) as ContinueResult;
   if (!result.ok) {
-    $("error").textContent = `Couldn't continue: ${result.reason ?? "unknown"}`;
+    $("error").textContent = `Couldn't continue: ${result.reason ?? "unknown error"}`;
+    shownKey = ""; // restart the countdown
     void load();
   }
 });
 
-$("new-tab").addEventListener("click", () => {
-  // Leaving a blocked site opens a new tab page rather than closing the user's tab.
-  void chrome.tabs.update({ url: "chrome://newtab/" });
-});
+// Leaving opens the new tab page in this tab rather than closing it.
+const leave = () => void chrome.tabs.update({ url: "chrome://newtab/" });
+$("leave").addEventListener("click", leave);
+$("leave-primary").addEventListener("click", leave);
 
+// The unlock delay restarts if you leave the page and come back.
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
-    clearInterval(countdown);
-    countdown = undefined;
+    shownKey = "";
     void load();
   }
 });
-window.addEventListener("hashchange", () => void load());
-// Keep the numbers fresh (e.g. a window ending, or limits changing).
+window.addEventListener("hashchange", () => {
+  shownKey = "";
+  void load();
+});
+// Keep the numbers fresh (a window ending, time running out, limits edited).
 setInterval(() => void load(), 5000);
 
 void load();

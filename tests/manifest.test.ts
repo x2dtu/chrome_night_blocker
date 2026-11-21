@@ -12,7 +12,7 @@ describe("manifest", () => {
 
   it("requests exactly the planned permissions", () => {
     expect([...manifest.permissions].sort()).toEqual(
-      ["alarms", "declarativeNetRequest", "idle", "storage", "tabs", "webNavigation"].sort(),
+      ["alarms", "declarativeNetRequest", "favicon", "idle", "storage", "tabs", "webNavigation"].sort(),
     );
     expect(manifest.host_permissions).toEqual(["<all_urls>"]);
   });

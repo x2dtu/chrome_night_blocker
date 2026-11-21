@@ -2,7 +2,7 @@ import type { AppState } from "../core/appState";
 import { type Decision, describeBlocker, formatDuration, gateTimeLeft } from "../core/decision";
 import type { TimeWarning, UsageReminder } from "../core/engine";
 import { setById, streakOf } from "../core/stateActions";
-import { MINUTE, HOUR, type Millis } from "../core/time";
+import { HOUR, MINUTE, type Millis } from "../core/time";
 import type { BlockPageModel, ContentMessage, SoftGateInfo } from "../shared/messages";
 
 // Turning engine results into what the block page and banner show.
@@ -52,17 +52,6 @@ export function blockPageModel(decision: Decision, host: string, state: AppState
     };
   }
   return { ...base, status: "allowed" };
-}
-
-/** "2/4 opens left · 8 of 20 min left"; "<1 min of 20 min left" in the last minute. */
-export function softStatusLine(soft: SoftGateInfo): string {
-  const parts: string[] = [];
-  if (soft.maxOpens !== null) parts.push(`${soft.maxOpens - soft.opensUsed}/${soft.maxOpens} opens left`);
-  if (soft.totalLimit !== null && soft.timeLeft !== null) {
-    const total = formatDuration(soft.totalLimit);
-    parts.push(soft.timeLeft < MINUTE ? `<1 min of ${total} left` : `${Math.floor(soft.timeLeft / MINUTE)} of ${total} left`);
-  }
-  return parts.join(" · ");
 }
 
 /** The banner for what's due now; a time warning beats a reminder due at the same moment. */

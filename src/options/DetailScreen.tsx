@@ -27,6 +27,8 @@ export function DetailScreen({ state, setId }: { state: AppState; setId: string 
   const status = statusOf(set, state, now, zone);
   const streak = streakOf(state, set.id).days;
   const pending = state.pendingChanges[set.id];
+  /** A turn-off is already waiting out the cooling-off. */
+  const turningOff = pending !== undefined && !pending.proposed.enabled;
   const check = checkSuspension(set, state.suspensions[set.id], now, zone);
   const usage = set.mode !== "hard" ? usageRows(set, state, now, zone) : null;
   const p = set.protection;
@@ -132,8 +134,14 @@ export function DetailScreen({ state, setId }: { state: AppState; setId: string 
         <button type="button" class="outline wide" onClick={() => navigate(`/edit/${encodeURIComponent(set.id)}`)}>Edit block set</button>
         {set.enabled ? (
           <>
-            <button type="button" class="outline wide" onClick={() => setEnabled(false)}>Turn off</button>
-            <Hint>Turning off takes effect after {formatDuration(p.changeWait)}. You can cancel it until then.</Hint>
+            <button type="button" class="outline wide" disabled={turningOff} onClick={() => setEnabled(false)}>
+              {turningOff ? `Turning off at ${formatTime(pending!.appliesAt, zone)}` : "Turn off"}
+            </button>
+            <Hint>
+              {turningOff
+                ? "Already turning off — cancel it above to keep the block set on."
+                : `Turning off takes effect after ${formatDuration(p.changeWait)}. You can cancel it until then.`}
+            </Hint>
           </>
         ) : (
           <>

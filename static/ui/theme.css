@@ -121,7 +121,8 @@ input { font: inherit; color: var(--text); }
 .setting-label { font-size: 15px; }
 .number { display: flex; align-items: center; gap: 6px; }
 .number input { width: 72px; text-align: right; }
-.number span { min-width: 44px; color: var(--muted); font-size: 13px; }
+/* Fixed-width unit so every input in a section lines up, whatever the unit ("sec", "per window"). */
+.number span { flex: none; width: 76px; color: var(--muted); font-size: 13px; white-space: nowrap; }
 
 /* Switch */
 .switch {

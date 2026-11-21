@@ -5,6 +5,7 @@
 //   nb.hardSoon("example.com", 1, 10)       hard block starting in 1 min, for 10 min
 //   nb.softNow("example.org", 2, 1)         soft block now for 2 h: 2 opens × 1 min
 //   nb.reminderNow("wikipedia.org", 1)      reminder every 1 min, now for 2 h
+//   nb.banner()                             show a sample banner on the active tab now
 //   nb.add({ ...block set fields })         any set (see src/core/model.ts)
 //   nb.remove(id)                           delete a set right away (skips the rules)
 //   nb.reset()                              delete everything
@@ -40,6 +41,12 @@ export function installDevTools(controller: Controller): void {
     reminderNow: (domain = "wikipedia.org", everyMin = 1) =>
       add({ name: `Reminder ${domain}`, mode: "reminder", targets: [website(domain)], windows: fromNow(0, 120), color: "#ffa726",
         softLimits: softLimits({ reminderInterval: minutes(everyMin) }) }),
+    banner: async (text = "example.com · 10 minutes left", setName = "Night Socials", color = "#5c6bc0") => {
+      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      if (tab?.id === undefined) return console.log("No active tab");
+      await chrome.tabs.sendMessage(tab.id, { type: "banner", text, setName, color })
+        .catch(() => console.log("No content script in that tab — reload the page (it must be a normal website)."));
+    },
     remove: (id: string) => controller.mutate((s) => ({ ...s, sets: s.sets.filter((x) => x.id !== id) })).then(() => undefined),
     reset: () => controller.mutate(() => EMPTY_STATE).then(() => undefined),
   };

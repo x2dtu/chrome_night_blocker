@@ -61,6 +61,7 @@ On the extension card click **Inspect views: service worker**, open the **Consol
 nb.hardSoon("example.com", 0, 10)   // hard block on example.com, starting now, for 10 min
 nb.softNow("example.org", 2, 1, 5)  // soft block: 2 opens × 1 min, 5 s unlock delay, for 2 h
 nb.reminderNow("wikipedia.org", 1)  // "N minutes so far" every minute, for 2 h
+nb.banner()                         // a sample banner on the active tab, right now
 nb.state()                          // everything stored
 nb.remove("<set id>")               // delete one set right away
 nb.reset()                          // delete everything
@@ -79,8 +80,10 @@ Things to check:
 4. **Idle** (3 min without input, or screen locked; a tab playing audio is never idle): an open
    with a time limit keeps counting and can run out while you're away; an open without one
    ends after the grace period.
-5. **Reminders / warnings:** with `reminderNow()`, after a minute on wikipedia.org the page's own
-   console (not the worker's) logs "wikipedia.org · 1 minute so far". (The banner itself comes in Phase 4.)
+5. **Banner:** with `reminderNow()`, after a minute on wikipedia.org a banner "www.wikipedia.org ·
+   1 minute so far" slides in at the top and fades after ~4.5 s; click it or drag it sideways/up
+   to dismiss. `nb.banner()` shows a sample on the active tab right away (reload tabs opened
+   before the extension was reloaded first).
 6. **Restarts:** quit and reopen the browser, or click the card's reload ↻ — sets and usage stay.
 
 Release builds (`npm run build:release`) leave the helpers out.

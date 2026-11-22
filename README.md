@@ -104,6 +104,11 @@ mkdir -p /tmp/lists && curl -sSL -o /tmp/lists/porn-nl.txt \
 python3 -I tools/build_domain_list.py /tmp/lists/porn-nl.txt static/data/adult_domains.bin
 ```
 
+## Windows extras
+
+`windows/` has a free, separate helper that turns on the grayscale color filter at night —
+see [windows/README.md](windows/README.md).
+
 ## Layout
 
 ```

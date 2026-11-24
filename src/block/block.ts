@@ -1,6 +1,7 @@
 // The block page. The blocked URL is after "#"; the worker says what to show.
 
 import { hostFromUrl } from "../core/hosts";
+import { faviconFor } from "../ui/favicon";
 import type { BlockPageModel, ContinueResult, Request } from "../shared/messages";
 import { chipText, continueLabel, openDots, resetKey, softStats, streakText } from "./view";
 
@@ -34,10 +35,17 @@ function render(m: BlockPageModel): void {
   document.documentElement.style.setProperty("--accent", m.color);
   // Adult sites get an "18+" badge rather than their own icon.
   const favicon = $<HTMLImageElement>("favicon");
-  favicon.hidden = m.adult;
   $("badge").hidden = !m.adult;
-  const src = `/_favicon/?pageUrl=${encodeURIComponent(originalUrl())}&size=64`;
-  if (!m.adult && favicon.getAttribute("src") !== src) favicon.src = src;
+  if (m.adult) {
+    favicon.hidden = true; // never contact adult sites, not even for an icon
+  } else {
+    const page = originalUrl();
+    void faviconFor(page, 64).then((src) => {
+      if (page !== originalUrl()) return;
+      favicon.hidden = src === null;
+      if (src && favicon.getAttribute("src") !== src) favicon.src = src;
+    });
+  }
   const allowed = m.status === "allowed";
   $("returning").hidden = !allowed;
   $("chip").parentElement!.hidden = allowed;
@@ -107,6 +115,8 @@ document.addEventListener("visibilitychange", () => {
     void load();
   }
 });
+// No icon rather than a broken one if the site has none.
+$<HTMLImageElement>("favicon").addEventListener("error", (e) => { (e.currentTarget as HTMLImageElement).hidden = true; });
 window.addEventListener("hashchange", () => {
   shownKey = "";
   void load();

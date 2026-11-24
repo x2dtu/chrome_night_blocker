@@ -4,7 +4,7 @@ import type { Target } from "../core/model";
 import { type DayWindow, MINUTES_PER_DAY } from "../core/schedule";
 import { ALL_DAYS, dayName } from "../core/time";
 import { type WindowGroup, describeDays, describeTimes } from "../core/windowGroups";
-import { faviconUrl } from "./format";
+import { faviconFor } from "./favicon";
 
 export function ScreenHeader({ title, subtitle, onBack }: { title: string; subtitle?: string; onBack?: () => void }) {
   return (
@@ -187,9 +187,22 @@ export function Hint({ children }: { children?: ComponentChildren }) {
 export function SiteIcon({ target, size = 32 }: { target: Target; size?: number }) {
   const style = { width: `${size}px`, height: `${size}px` };
   if (target.kind === "website") {
-    return <span class="site-icon" style={style}><img src={faviconUrl(target.domain, 32)} alt="" width={size * 0.6} height={size * 0.6} /></span>;
+    return <span class="site-icon" style={style}><Favicon pageUrl={`https://${target.domain}/`} size={size * 0.6} /></span>;
   }
   return <span class="site-icon badge" style={{ ...style, fontSize: `${size * 0.34}px` }}>{target.kind === "adult" ? "18+" : "•"}</span>;
+}
+
+/** The site's icon (see favicon.ts); nothing if there isn't one. */
+export function Favicon({ pageUrl, size }: { pageUrl: string; size: number }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setSrc(null);
+    void faviconFor(pageUrl, 32).then((s) => alive && setSrc(s));
+    return () => { alive = false; };
+  }, [pageUrl]);
+  if (!src) return null;
+  return <img src={src} alt="" width={size} height={size} onError={() => setSrc(null)} />;
 }
 
 /** Seven stacked bars, one per day; blocked times are drawn in [color]. */

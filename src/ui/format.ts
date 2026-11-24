@@ -26,10 +26,5 @@ export function targetLabel(t: Target): string {
   }
 }
 
-/** Favicon URL for a site (extension pages only; needs the "favicon" permission). */
-export function faviconUrl(domain: string, size = 32): string {
-  return `/_favicon/?pageUrl=${encodeURIComponent(`https://${domain}/`)}&size=${size}`;
-}
-
 /** Set colors, same as the Android app. */
 export const SET_COLORS = ["#5c6bc0", "#26a69a", "#ef5350", "#ffa726", "#ab47bc", "#42a5f5", "#66bb6a", "#8d6e63"] as const;
